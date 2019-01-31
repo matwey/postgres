@@ -300,10 +300,11 @@ spg_quad_inner_consistent(PG_FUNCTION_ARGS)
 
 	for (i = 0; i < in->nkeys; i++)
 	{
-		Point	   *query = DatumGetPointP(in->scankeys[i].sk_argument);
+		const ScanKey sk = in->scankeys + i;
+		Point	   *query = DatumGetPointP(sk->sk_argument);
 		BOX		   *boxQuery;
 
-		switch (in->scankeys[i].sk_strategy)
+		switch (sk->sk_strategy)
 		{
 			case RTLeftStrategyNumber:
 				if (SPTEST(point_right, centroid, query))
@@ -331,7 +332,7 @@ spg_quad_inner_consistent(PG_FUNCTION_ARGS)
 				 * cheat to the extent of assuming that DatumGetPointP won't
 				 * do anything that would be bad for a pointer-to-box.
 				 */
-				boxQuery = DatumGetBoxP(in->scankeys[i].sk_argument);
+				boxQuery = DatumGetBoxP(sk->sk_argument);
 
 				if (DatumGetBool(DirectFunctionCall2(box_contain_pt,
 													 PointerGetDatum(boxQuery),
@@ -358,8 +359,7 @@ spg_quad_inner_consistent(PG_FUNCTION_ARGS)
 				}
 				break;
 			default:
-				elog(ERROR, "unrecognized strategy number: %d",
-					 in->scankeys[i].sk_strategy);
+				elog(ERROR, "unrecognized strategy number: %d", sk->sk_strategy);
 				break;
 		}
 
@@ -421,9 +421,10 @@ spg_quad_leaf_consistent(PG_FUNCTION_ARGS)
 	res = true;
 	for (i = 0; i < in->nkeys; i++)
 	{
-		Point	   *query = DatumGetPointP(in->scankeys[i].sk_argument);
+		const ScanKey sk = in->scankeys + i;
+		Point	   *query = DatumGetPointP(sk->sk_argument);
 
-		switch (in->scankeys[i].sk_strategy)
+		switch (sk->sk_strategy)
 		{
 			case RTLeftStrategyNumber:
 				res = SPTEST(point_left, datum, query);
@@ -450,8 +451,7 @@ spg_quad_leaf_consistent(PG_FUNCTION_ARGS)
 				res = SPTEST(box_contain_pt, query, datum);
 				break;
 			default:
-				elog(ERROR, "unrecognized strategy number: %d",
-					 in->scankeys[i].sk_strategy);
+				elog(ERROR, "unrecognized strategy number: %d", sk->sk_strategy);
 				break;
 		}
 
